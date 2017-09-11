@@ -28,7 +28,6 @@ FSM<StateCount, EdgeCount> fsm( StateBuilder<EdgeCount>{StateStart,
 
     Config.begin();
     Serial.println(Config.toString());
-    Config.write();
     
     UserInterface.begin();
   },
@@ -61,10 +60,10 @@ void buildStateMachine() {
   fsm.addState( StateBuilder<EdgeCount>{StateConfigPage,
     []() {
       Serial.println("Enter StateConfigPage");
-      UserInterface.setLED(true);
+      UserInterface.setLED(LEDState::On);
     },
     []() { },
-    []() { UserInterface.setLED(false); } }
+    []() { UserInterface.setLED(LEDState::Off); } }
   .addTransition(StateConnectToAP,
     []() { /*On submit valid Config*/ return false; })
   .build() );
@@ -72,11 +71,11 @@ void buildStateMachine() {
   fsm.addState( StateBuilder<EdgeCount>{StateConnectToAP,
     []() {
       Serial.println("Enter StateConnectToAP");
-      UserInterface.setLEDBlink(500);
+      UserInterface.setLED(LEDState::Blink, 500);
       WiFiStation.begin(Config.getSSID(), Config.getPSK());
     },
     []() { },
-    []() { UserInterface.setLED(false); } }
+    []() { UserInterface.setLED(LEDState::Off); } }
   .addTransition(StateConnectToServer,
     []() { return WiFiStation.isConnected(); })
   .addTransition(StateConfigPage,
@@ -86,13 +85,13 @@ void buildStateMachine() {
   fsm.addState( StateBuilder<EdgeCount>{StateConnectToServer,
     []() {
       Serial.println("Enter StateConnectToServer");
-      UserInterface.setLEDBlink(100);
+      UserInterface.setLED(LEDState::Blink, 100);
     },
     []() {
       WiFiRemote::Server.end();
       WiFiRemote::Server.begin(Config.getServerName(), Config.getServerPass());
     },
-    []() { UserInterface.setLED(false); } }
+    []() { UserInterface.setLED(LEDState::Off); } }
   .addTransition(StateConnectToAP,
     []() { return !WiFiStation.isConnected(); })
   .addTransition(StateWaitForButton,

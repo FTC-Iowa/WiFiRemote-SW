@@ -21,23 +21,15 @@ void WiFiRemote::__UserInterface::begin() {
   attachInterrupt(getPin(Button::Previous), isr_prev, CHANGE);
   attachInterrupt(getPin(Button::Start), isr_start, CHANGE);
   attachInterrupt(getPin(Button::Stop), isr_stop, CHANGE);
+
+  os_timer_disarm(&blinkTimer);
+  os_timer_setfn(&blinkTimer, blinkTimerHandler, this);
   
   pinMode(PIN_LED, OUTPUT);
-  setLED(ledState);
+  setLED(LEDState::Off);
 }
 
 void WiFiRemote::__UserInterface::run() {
-  //Serial.println("RUN");
-  
-  if(blinkPeriod != 0) {
-    unsigned int curTime = millis();
-  
-    if( (curTime - lastBlinkTime) >= blinkPeriod ) {
-      Serial.println("BLINK");
-      setLED(!getLED());
-      lastBlinkTime = curTime;
-    }
-  }
 }
 
 bool WiFiRemote::__UserInterface::buttonEvent() const {
@@ -62,23 +54,31 @@ String WiFiRemote::__UserInterface::getButtonName(Button b) const {
   return BUTTON_NAMES[static_cast<int>(b)];
 }
 
-bool WiFiRemote::__UserInterface::getLED() const {
+WiFiRemote::__UserInterface::LEDState WiFiRemote::__UserInterface::getLED() const {
   return ledState;
 }
 
-void WiFiRemote::__UserInterface::setLED(bool value) {
+void WiFiRemote::__UserInterface::setLED(LEDState value, unsigned int period) {
+  if(value == LEDState::Blink) {
+    os_timer_arm(&blinkTimer, period, 1);
+  }
+  else {
+    if(ledState == LEDState::Blink) {
+      os_timer_disarm(&blinkTimer);
+    }
+    setLEDPin(!static_cast<bool>(value));
+  }
+  
   ledState = value;
-  blinkPeriod = 0;
-  digitalWrite(PIN_LED, !value); //LED is active low
-}
-
-void WiFiRemote::__UserInterface::setLEDBlink(unsigned int period) {
-  blinkPeriod = period;
-  lastBlinkTime = millis();
 }
 
 uint8_t WiFiRemote::__UserInterface::getPin(Button b) const {
   return PIN_BUTTONS[static_cast<int>(b)];
+}
+
+void WiFiRemote::__UserInterface::setLEDPin(bool value) {
+  ledPinValue = value;
+  digitalWrite(PIN_LED, value);
 }
 
 void WiFiRemote::__UserInterface::isr_next() {
@@ -108,6 +108,14 @@ void WiFiRemote::__UserInterface::isr(Button b) {
       pushEvent(b);
     }
   }
+}
+
+void WiFiRemote::__UserInterface::blinkTimerHandler(void* self) {
+  reinterpret_cast<__UserInterface*>(self)->blinkUpdate();
+}
+
+void WiFiRemote::__UserInterface::blinkUpdate() {
+  setLEDPin(!ledPinValue);
 }
 
 bool WiFiRemote::__UserInterface::pushEvent(Button b) {

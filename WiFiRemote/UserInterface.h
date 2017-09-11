@@ -4,6 +4,11 @@
 #include <Arduino.h>
 #include <cstdint>
 
+extern "C" {
+  #include <os_type.h>
+  #include <osapi.h>
+}
+
 namespace WiFiRemote {
   extern class __UserInterface {
   public:
@@ -12,6 +17,12 @@ namespace WiFiRemote {
       Previous,
       Start,
       Stop
+    };
+
+    enum class LEDState {
+      Off = 0,
+      On,
+      Blink
     };
     
     void begin();
@@ -24,9 +35,8 @@ namespace WiFiRemote {
 
     String getButtonName(Button) const;
 
-    bool getLED() const;
-    void setLED(bool value);
-    void setLEDBlink(unsigned int period);
+    LEDState getLED() const;
+    void setLED(LEDState, unsigned int period = 0);
 
   private:
     static constexpr uint8_t BUTTON_COUNT = 4;
@@ -38,11 +48,16 @@ namespace WiFiRemote {
 
     uint8_t getPin(Button) const;
 
+    void setLEDPin(bool);
+
     static void isr_next();
     static void isr_prev();
     static void isr_start();
     static void isr_stop();
     void isr(Button);
+
+    static void blinkTimerHandler(void*);
+    void blinkUpdate();
 
     bool pushEvent(Button b);
     bool popEvent(Button&);
@@ -54,10 +69,12 @@ namespace WiFiRemote {
     volatile Button buttonEvents[BUTTON_COUNT];
     volatile uint8_t buttonEventLength;
 
-    bool ledState;
-    unsigned int blinkPeriod;
-    unsigned int lastBlinkTime;
+    LEDState ledState;
+    bool ledPinValue;
+    os_timer_t blinkTimer;
   } UserInterface;
+
+  using LEDState = __UserInterface::LEDState;
 }
 
 
