@@ -27,10 +27,10 @@ void WiFiRemote::__UserInterface::begin() {
 }
 
 void WiFiRemote::__UserInterface::run() {
+  //Serial.println("RUN");
+  
   if(blinkPeriod != 0) {
     unsigned int curTime = millis();
-
-    Serial.println("RUN");
   
     if( (curTime - lastBlinkTime) >= blinkPeriod ) {
       Serial.println("BLINK");

@@ -5,6 +5,8 @@ namespace WiFiRemote {
 }
 
 void WiFiRemote::__Server::begin(const String& name, const String& pass) {
+  client.setTimeout(TIMEOUT);
+  
   if(client.connect(name.c_str(), PORT)) {
     //TODO: Authenticate with password
 

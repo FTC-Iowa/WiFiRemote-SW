@@ -19,6 +19,7 @@ namespace WiFiRemote {
 
   private:
     static const uint16_t PORT = 8080;
+    static const int TIMEOUT = 100;
 
     WiFiClient client;
 

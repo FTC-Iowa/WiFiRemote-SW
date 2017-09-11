@@ -89,6 +89,7 @@ void buildStateMachine() {
       UserInterface.setLEDBlink(100);
     },
     []() {
+      WiFiRemote::Server.end();
       WiFiRemote::Server.begin(Config.getServerName(), Config.getServerPass());
     },
     []() { UserInterface.setLED(false); } }
@@ -104,10 +105,11 @@ void buildStateMachine() {
     []() { } }
   .addTransition(StateConnectToAP,
     []() { return !WiFiStation.isConnected(); })
+  .addTransition(StateConnectToServer,
+    []() { return !WiFiRemote::Server.isConnected(); })
   .addTransition(StateSendButtonEvent,
     []() { return UserInterface.buttonEvent(); })
   .build() );
-  
   fsm.addState( StateBuilder<EdgeCount>{StateSendButtonEvent,
     []() { Serial.println("Enter StateSendButtonEvent"); },
     []() {
@@ -120,6 +122,8 @@ void buildStateMachine() {
     []() { } }
   .addTransition(StateConnectToAP,
     []() { return !WiFiStation.isConnected(); })
+  .addTransition(StateConnectToServer,
+    []() { return !WiFiRemote::Server.isConnected(); })
   .addTransition(StateWaitForButton,
     []() { /*After successful transmission of button event to server*/ return true; })
   .build() );
