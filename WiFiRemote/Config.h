@@ -4,16 +4,16 @@
 #include <Arduino.h>
 
 namespace WiFiRemote {
-  class Config {
+  extern class __Config {
   public:
     enum class MultipleFieldOption {
       One = 0,
       Two = 1,
       Both = 2
     };
-  
-    Config();
-    ~Config();
+
+    void begin();
+    void end();
   
     /*! \brief Returns true if EEPROM has valid configuration
      * 
@@ -71,7 +71,7 @@ namespace WiFiRemote {
 
     bool isValid;
     bool unsavedChanges;
-  };
+  } Config;
 }
 
 

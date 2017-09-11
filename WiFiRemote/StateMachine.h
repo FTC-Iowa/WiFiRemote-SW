@@ -2,18 +2,19 @@
 #define STATE_MACHINE_H
 
 #include <utility>
+#include <functional>
 
 //Placement new
-void * operator new (size_t size, void * ptr) { return ptr; }
+//void * operator new (size_t size, void * ptr) { return ptr; }
 
 namespace WiFiRemote {
   namespace StateMachine {
     template<int MaxEdges> class StateBuilder;
     
-    using InitFunc = void(*)();
-    using UpdateFunc = void(*)();
-    using DeinitFunc = void(*)();
-    using TransitionFunc = bool(*)();
+    using InitFunc = std::function<void()>;
+    using UpdateFunc = std::function<void()>;
+    using DeinitFunc = std::function<void()>;
+    using TransitionFunc = std::function<bool()>;
     
     using StateID = int;
     

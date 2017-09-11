@@ -2,10 +2,14 @@
 
 #include <EEPROM.h>
 
-WiFiRemote::Config::Config()
-  : isValid{false}
-  , unsavedChanges{false} {
+namespace WiFiRemote {
+  __Config Config;
+}
 
+void WiFiRemote::__Config::begin() {
+  isValid = false;
+  unsavedChanges = false;
+  
   EEPROM.begin(512);
 
   if(loadInt(OFFSET_MAGIC, SIZE_MAGIC) == VALUE_MAGIC) {
@@ -35,17 +39,17 @@ WiFiRemote::Config::Config()
   EEPROM.end();
 }
 
-WiFiRemote::Config::~Config() {
-  if(unsavedChanges && isValid) {
+void WiFiRemote::__Config::end() {
+  if(unsavedChanges) {
     write();
   }
 }
 
-WiFiRemote::Config::operator bool() const {
+WiFiRemote::__Config::operator bool() const {
   return isValid;
 }
 
-String WiFiRemote::Config::toString() const {
+String WiFiRemote::__Config::toString() const {
   String str;
   
   if(isValid) {
@@ -66,37 +70,37 @@ String WiFiRemote::Config::toString() const {
     }
   }
   else {
-    str = "Invalid Configuration";
+    str = "Invalid __Configuration";
   }
 
   return str;
 }
 
-String WiFiRemote::Config::getSSID() const {
+String WiFiRemote::__Config::getSSID() const {
   return ssid;
 }
 
-String WiFiRemote::Config::getPSK() const {
+String WiFiRemote::__Config::getPSK() const {
   return psk;
 }
 
-String WiFiRemote::Config::getServerName() const {
+String WiFiRemote::__Config::getServerName() const {
   return serverName;
 }
 
-String WiFiRemote::Config::getServerPass() const {
+String WiFiRemote::__Config::getServerPass() const {
   return serverPass;
 }
 
-String WiFiRemote::Config::getFieldDivision() const {
+String WiFiRemote::__Config::getFieldDivision() const {
   return fieldDivision;
 }
 
-WiFiRemote::Config::MultipleFieldOption WiFiRemote::Config::getMultipleFieldOption() const {
+WiFiRemote::__Config::MultipleFieldOption WiFiRemote::__Config::getMultipleFieldOption() const {
   return fieldOption;
 }
 
-bool WiFiRemote::Config::setSSID(const String& ssid) {
+bool WiFiRemote::__Config::setSSID(const String& ssid) {
   if(ssid.length() < SIZE_SSID) {
     this->ssid = ssid;
     unsavedChanges = true;
@@ -106,7 +110,7 @@ bool WiFiRemote::Config::setSSID(const String& ssid) {
     return false;
   }
 }
-bool WiFiRemote::Config::setPSK(const String& psk) {
+bool WiFiRemote::__Config::setPSK(const String& psk) {
   if(psk.length() < SIZE_PSK) {
     this->psk = psk;
     unsavedChanges = true;
@@ -116,7 +120,7 @@ bool WiFiRemote::Config::setPSK(const String& psk) {
     return false;
   }
 }
-bool WiFiRemote::Config::setServerName(const String& serverName) {
+bool WiFiRemote::__Config::setServerName(const String& serverName) {
   if(serverName.length() < SIZE_SERVER_NAME) {
     this->serverName = serverName;
     unsavedChanges = true;
@@ -126,7 +130,7 @@ bool WiFiRemote::Config::setServerName(const String& serverName) {
     return false;
   }
 }
-bool WiFiRemote::Config::setServerPass(const String& serverPass) {
+bool WiFiRemote::__Config::setServerPass(const String& serverPass) {
   if(serverPass.length() < SIZE_SERVER_PASS) {
     this->serverPass = serverPass;
     unsavedChanges = true;
@@ -136,7 +140,7 @@ bool WiFiRemote::Config::setServerPass(const String& serverPass) {
     return false;
   }
 }
-bool WiFiRemote::Config::setFieldDivision(const String& fieldDivision) {
+bool WiFiRemote::__Config::setFieldDivision(const String& fieldDivision) {
   if(ssid.length() < SIZE_FIELD_DIVISION) {
     this->fieldDivision = fieldDivision;
     unsavedChanges = true;
@@ -146,13 +150,13 @@ bool WiFiRemote::Config::setFieldDivision(const String& fieldDivision) {
     return false;
   }
 }
-bool WiFiRemote::Config::setMultipleFieldOption(MultipleFieldOption fieldOption) {
+bool WiFiRemote::__Config::setMultipleFieldOption(MultipleFieldOption fieldOption) {
   this->fieldOption = fieldOption;
   unsavedChanges = true;
   return true;
 }
 
-void WiFiRemote::Config::write() {
+void WiFiRemote::__Config::write() {
   if(unsavedChanges) {
     EEPROM.begin(512);
 
@@ -175,7 +179,7 @@ void WiFiRemote::Config::write() {
   }
 }
 
-int WiFiRemote::Config::loadString(String& out, int offset, int totalStoreSize) {
+int WiFiRemote::__Config::loadString(String& out, int offset, int totalStoreSize) {
   if(out.length() != 0) {
     out = "";
   }
@@ -198,7 +202,7 @@ int WiFiRemote::Config::loadString(String& out, int offset, int totalStoreSize) 
   return out.length();
 }
 
-int WiFiRemote::Config::loadInt(int offset, int totalStoreSize) {
+int WiFiRemote::__Config::loadInt(int offset, int totalStoreSize) {
   int value = 0;
   
   if(totalStoreSize > sizeof(int)) {
@@ -216,14 +220,14 @@ int WiFiRemote::Config::loadInt(int offset, int totalStoreSize) {
   return value;
 }
 
-void WiFiRemote::Config::writeString(int offset, const String& str) {
+void WiFiRemote::__Config::writeString(int offset, const String& str) {
   for(int i = 0; i < str.length(); ++i) {
     EEPROM.put(offset + i, str[i]);
   }
   EEPROM.put(offset + str.length(), (char)'\0');
 }
 
-void WiFiRemote::Config::writeInt(int offset, int value, int size) {
+void WiFiRemote::__Config::writeInt(int offset, int value, int size) {
   if(size > sizeof(int)) {
     size = sizeof(int);
   }

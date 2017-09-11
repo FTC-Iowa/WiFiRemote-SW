@@ -3,76 +3,125 @@
 #include <EEPROM.h>
 #include "Config.h"
 
+#include "UserInterface.h"
+
+#include <ESP8266WiFi.h>
+#include "WiFiStation.h"
+
+#include "Server.h"
+
+using namespace WiFiRemote;
 using namespace WiFiRemote::StateMachine;
 
-const int StateCount = 5;
-const int EdgeCount = 2;
+const int StateCount = 6;
+const int EdgeCount = 3;
 const int StateStart = 0,
   StateConfigPage = 1,
   StateConnectToAP = 2,
-  StateWaitForButton = 3,
-  StateSendButtonEvent = 4;
-
-WiFiRemote::Config config;
+  StateConnectToServer = 3,
+  StateWaitForButton = 4,
+  StateSendButtonEvent = 5;
 
 FSM<StateCount, EdgeCount> fsm( StateBuilder<EdgeCount>{StateStart,
-  []() { Serial.println("Enter State 0"); },
-  []() { /*Do Nothing*/ },
-  []() { /*Do Nothing*/ } }
+  []() {
+    Serial.println("Enter StateInit");
+
+    Config.begin();
+    Serial.println(Config.toString());
+    Config.write();
+    
+    UserInterface.begin();
+  },
+  []() { },
+  []() { } }
   .addTransition(StateConfigPage,
-    [&config]() {
-      /*If buttons held*/
-      return !config;
+    [&Config]() {
+      return !Config ||
+        (UserInterface.getButton(__UserInterface::Button::Start) && UserInterface.getButton(__UserInterface::Button::Stop));
   } )
   .addTransition(StateConnectToAP,
-    [&config]() { /*If buttons not held*/ return !!config; } )
+    []() { return true; } )
   .build() );
 
 void setup() {
   Serial.begin(115200);
   Serial.println("\nEntering setup");
 
-  fsm.addState( StateBuilder<EdgeCount>{StateConfigPage,
-    []() { Serial.println("Enter State 1"); },
-    []() { },
-    []() { } }
-  .addTransition(StateConnectToAP,
-    []() { /*On submit valid config*/ return false; })
-  .build() );
-  
-  fsm.addState( StateBuilder<EdgeCount>{StateConnectToAP,
-    []() { Serial.println("Enter State 2"); },
-    []() { },
-    []() { } }
-  .addTransition(StateConfigPage,
-    []() { /*Failed to connect / authenticate with server*/ return false; })
-  .addTransition(StateWaitForButton,
-    []() { /*On connected/authenticated with server*/ return false; })
-  .build() );
-  
-  fsm.addState( StateBuilder<EdgeCount>{StateWaitForButton,
-    []() { Serial.println("Enter State 3"); },
-    []() { },
-    []() { } }
-  .addTransition(StateConnectToAP,
-    []() { /*On disconnect from AP*/ return false; })
-  .addTransition(StateSendButtonEvent,
-    []() { /*On button press event*/ return false; })
-  .build() );
-  
-  fsm.addState( StateBuilder<EdgeCount>{StateSendButtonEvent,
-    []() { Serial.println("Enter State 4"); },
-    []() { },
-    []() { } }
-  .addTransition(StateConnectToAP,
-    []() { /*On disconnect from AP*/ return false; })
-  .addTransition(StateWaitForButton,
-    []() { /*After successful transmission of button event to server*/ return false; })
-  .build() );
+  buildStateMachine();
 
   Serial.println("\nLeaving setup");
 }
 
 void loop() {
+  UserInterface.run();
   fsm.run();
 }
+
+void buildStateMachine() {
+  fsm.addState( StateBuilder<EdgeCount>{StateConfigPage,
+    []() {
+      Serial.println("Enter StateConfigPage");
+      UserInterface.setLED(true);
+    },
+    []() { },
+    []() { UserInterface.setLED(false); } }
+  .addTransition(StateConnectToAP,
+    []() { /*On submit valid Config*/ return false; })
+  .build() );
+  
+  fsm.addState( StateBuilder<EdgeCount>{StateConnectToAP,
+    []() {
+      Serial.println("Enter StateConnectToAP");
+      UserInterface.setLEDBlink(500);
+      WiFiStation.begin(Config.getSSID(), Config.getPSK());
+    },
+    []() { },
+    []() { UserInterface.setLED(false); } }
+  .addTransition(StateConnectToServer,
+    []() { return WiFiStation.isConnected(); })
+  .addTransition(StateConfigPage,
+    []() { return WiFiStation.timedOut(); })
+  .build() );
+
+  fsm.addState( StateBuilder<EdgeCount>{StateConnectToServer,
+    []() {
+      Serial.println("Enter StateConnectToServer");
+      UserInterface.setLEDBlink(100);
+    },
+    []() {
+      WiFiRemote::Server.begin(Config.getServerName(), Config.getServerPass());
+    },
+    []() { UserInterface.setLED(false); } }
+  .addTransition(StateConnectToAP,
+    []() { return !WiFiStation.isConnected(); })
+  .addTransition(StateWaitForButton,
+    []() { return WiFiRemote::Server.isConnected(); })
+  .build() );
+  
+  fsm.addState( StateBuilder<EdgeCount>{StateWaitForButton,
+    []() { Serial.println("Enter StateWaitForButton"); },
+    []() { },
+    []() { } }
+  .addTransition(StateConnectToAP,
+    []() { return !WiFiStation.isConnected(); })
+  .addTransition(StateSendButtonEvent,
+    []() { return UserInterface.buttonEvent(); })
+  .build() );
+  
+  fsm.addState( StateBuilder<EdgeCount>{StateSendButtonEvent,
+    []() { Serial.println("Enter StateSendButtonEvent"); },
+    []() {
+      __UserInterface::Button button;
+      if(UserInterface.getButtonEvent(button)) {
+        Serial.print("Button "); Serial.print(UserInterface.getButtonName(button)); Serial.println(" pressed");
+        WiFiRemote::Server.sendEvent(button);
+      }
+    },
+    []() { } }
+  .addTransition(StateConnectToAP,
+    []() { return !WiFiStation.isConnected(); })
+  .addTransition(StateWaitForButton,
+    []() { /*After successful transmission of button event to server*/ return true; })
+  .build() );
+}
+
