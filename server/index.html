@@ -1,0 +1,81 @@
+<html>
+	<head>
+		<title>WiFi Remote Configuration</title>
+		<script type="text/javascript">
+			function httpGetAsync(theUrl, callback) {
+					var xmlHttp = new XMLHttpRequest();
+					xmlHttp.onreadystatechange = function() { 
+							if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+									callback(xmlHttp.responseText);
+					}
+					xmlHttp.open("GET", theUrl, true); // true for asynchronous
+					xmlHttp.setRequestHeader("Cache-Control", "no-cache");
+					xmlHttp.send(null);
+			}
+			function getSSIDs() {
+				httpGetAsync("station_scan", function(stations) {
+					updateSSIDs(stations);
+				});
+			}
+
+			function updateSSIDs(stations) {
+				//Get the SSID Selector
+				var select = document.getElementById("SSID_SEL");
+				
+				//Clear existing options
+				while(select.firstChild) {
+					select.removeChild(select.firstChild);
+				}
+				
+				//Parse JSON
+				var stationObj = JSON.parse(stations);
+				var arr = stationObj.Stations;
+
+				//Add SSIDs from JSON to select field
+				for(i = 0; i < arr.length; i++) {
+					var newOpt = document.createElement('option');
+					newOpt.text = arr[i].SSID;
+					newOpt.value = arr[i].SSID;
+					select.append(newOpt);
+				}
+			}
+
+			function validatePSK() {
+				var psk = document.getElementById("PSK").value;
+
+				if(psk.length < 8 || psk.length > 63) {
+					alert("WiFi PSK must be between 8 and 63 characters");
+					return false;
+				}
+				else {
+					return true;
+				}
+			}
+
+			function tryConnect() {
+				if(validatePSK()) {
+					httpGetAsync(
+		</script>
+	</head>
+	<body>
+		<form onsubmit="tryConnect()">
+			<fieldset>
+				<legend>Access Point</legend>
+				SSID:<br>
+				<select name="ssid" id="SSID_SEL">
+					<option value="ISU-CARDINAL">ISU-CARDINAL</option>
+					<option value="IASTATE">IASTATE</option>
+				</select>
+				<button type="button" onclick="validatePSK()">Refresh</button>
+				<p>
+				PSK:<br>
+				<input type="password" name="psk" id="PSK"><br>
+				<input type="submit" value="Connect">
+			</fieldset>
+		</form>
+
+		<script type="text/javascript">
+			getSSIDs();
+		</script>
+	</body>
+</html>
