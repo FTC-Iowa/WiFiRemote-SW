@@ -1,7 +1,9 @@
 <html>
 	<head>
-		<title>WiFi Remote - WiFi Settings</title>
+		<title>WiFi Remote - Server Settings</title>
 		<script type="text/javascript">
+			var serverConfig;
+
 			function httpGetAsync(theUrl, headers, callback) {
 					var xmlHttp = new XMLHttpRequest();
 					xmlHttp.onreadystatechange = function() { 
@@ -19,35 +21,25 @@
 
 					xmlHttp.send(null);
 			}
-			function getSSIDs() {
-				setStatus("Scanning...");
-				httpGetAsync("station_scan", null, function(stations) {
-					updateSSIDs(stations);
+			function getConfig() {
+				setStatus("Loading Server Config...");
+				httpGetAsync("server_config", null, function(response) {
+					setConfig(JSON.parse(response));
 
 					setStatus("");
 				});
 			}
 
-			function updateSSIDs(stations) {
-				//Get the SSID Selector
-				var select = document.getElementById("SSID_SEL");
+			function setConfig(config) {
+				var serverConfig = config;
 				
-				//Clear existing options
-				while(select.firstChild) {
-					select.removeChild(select.firstChild);
-				}
-				
-				//Parse JSON
-				var stationObj = JSON.parse(stations);
-				var arr = stationObj.Stations;
+				var fieldset = document.getElementById("fieldset");
 
-				//Add SSIDs from JSON to select field
-				for(i = 0; i < arr.length; i++) {
-					var newOpt = document.createElement('option');
-					newOpt.text = arr[i].SSID;
-					newOpt.value = arr[i].SSID;
-					select.append(newOpt);
-				}
+				fieldset.innerHTML = "<legend>" + config.EventName + "</legend>";
+				
+				var divisions = config.Divisions;
+				if(divisions.length > 1) {
+					fieldset.innerHTML = "
 			}
 
 			function validatePSK() {
@@ -101,24 +93,19 @@
 	</head>
 	<body>
 		<form onsubmit="return tryConnect()">
-			<fieldset>
-				<legend>Access Point</legend>
-				SSID:<br>
-				<select name="ssid" id="SSID_SEL">
-					<option value="ISU-CARDINAL">ISU-CARDINAL</option>
-					<option value="IASTATE">IASTATE</option>
-				</select>
-				<button type="button" onclick="getSSIDs()">Scan</button>
-				<p>
-				PSK:<br>
-				<input type="password" name="psk" id="PSK"><br>
-				<input type="submit" value="Connect">
+			<fieldset id="fieldset">
+				<legend id="legend"></legend>
+				
+				<input type="checkbox" id="check_1">
+				<label for="check_1">Field 1</label>
+
+				<input type="submit" value="Register">
 				<p id="status_text"> </p>
 			</fieldset>
 		</form>
 
 		<script type="text/javascript">
-			getSSIDs();
+			getConfig();
 		</script>
 	</body>
 </html>
