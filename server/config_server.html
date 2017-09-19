@@ -31,55 +31,80 @@
 			}
 
 			function setConfig(config) {
-				var serverConfig = config;
+				serverConfig = config;
 				
-				var fieldset = document.getElementById("fieldset");
+				document.getElementById("legend").innerHTML = config.EventName;
 
-				fieldset.innerHTML = "<legend>" + config.EventName + "</legend>";
-				
 				var divisions = config.Divisions;
 				if(divisions.length > 1) {
-					fieldset.innerHTML = "
+					var select = document.createElement("select");
+					select.name = "Division";
+					select.id = "division";
+					select.onchange = updateFieldOptions;
+					
+					for(i = 0; i < divisions.length; i++) {
+						var option = document.createElement("option");
+						option.text = config.Divisions[i].Name;
+						option.value = option.text;
+						select.append(option);
+					}
+					var division_select = document.getElementById("division_select");
+					division_select.innerHTML = "";
+					division_select.append(select);
+				}
+
+				updateFieldOptions();
 			}
 
-			function validatePSK() {
-				var psk = document.getElementById("PSK").value;
+			function updateFieldOptions() {
+				var controls = document.getElementById("field_controls");
+				controls.innerHTML = "";
+				
+				var division;
+				var divisions = serverConfig.Divisions;
+				if(divisions.length > 1) {
+					var selected = document.getElementById("division").value;
 
-				if(psk.length < 8 || psk.length > 63) {
-					alert("WiFi PSK must be between 8 and 63 characters");
-					return false;
+					for(i = 0; i < divisions.length; i++) {
+						if(divisions[i].Name == selected) {
+							division = divisions[i];
+							break;
+						}
+					}
 				}
 				else {
-					return true;
+					division = divisions[0];
 				}
-			}
 
-			function tryConnect() {
-				if(validatePSK()) {
-					setStatus("Connecting...", null);
+				var check1 = document.createElement("input");
+				check1.type = "checkbox";
+				check1.id = "check_1";
+				var label1 = document.createElement("label");
+				label1.htmlFor = "check_1";
+				label1.innerHTML = "Field 1";
 
-					headers = [
-						{
-							"name" : "psk",
-							"value" : document.getElementById("PSK").value
-						},
-						{
-							"name" : "ssid",
-							"value" : document.getElementById("SSID_SEL").value
-						}
-					]
-					httpGetAsync("try_connect", headers, function(result) {
-						var parsed = JSON.parse(result);
-						if(parsed.success == "true") {
-							window.location.href = "/config_server.html";
-						}
-						else {
-							setStatus("Connect Failed", "red");
-						}
-					});
+
+				if(division.NumFields == 1) {
+					check1.checked = true;
+					check1.onclick = function() { return false; };
+					check1.onkeydown = function() { return false; };
+					
+					controls.append(check1);
+					controls.append(label1);
 				}
-				
-				return false;
+				else {
+					var check2 = document.createElement("input");
+					check2.type = "checkbox";
+					check2.id = "check_2";
+					var label2 = document.createElement("label");
+					label2.htmlFor = "check_2";
+					label2.innerHTML = "Field 2";
+
+					controls.append(check1);
+					controls.append(label1);
+					controls.append(check2);
+					controls.append(label2);
+				}
 			}
 
 			function setStatus(text, color) {
@@ -89,17 +114,63 @@
 				}
 				statusNode.innerHTML = "<font size=2 color=" + color + ">" + text + "</font>";
 			}
+
+			function tryRegister() {
+				var headers = {};
+
+				headers.fields = [];
+				
+				var checkBox1 = document.getElementById("check_1");
+				var checkBox2 = document.getElementById("check_2");
+
+				var check1 = checkBox1.checked;
+				var check2 = false;
+				if(checkBox2) {
+					check2 = checkBox2.checked;
+				}
+				
+				if(!check1 && !check2) {
+					alert("At least one field must be selected");
+				}
+				else {
+					setStatus("Registering...", null);
+
+					if(check1) {
+						headers.fields.push(1);
+					}
+					if(check2) {
+						headers.fields.push(2);
+					}
+
+					if(serverConfig.Divisions.length > 1) {
+						headers.division = document.getElementById("division").value;
+					}
+
+					httpGetAsync("/try_register", headers, function(result) {
+						if(JSON.parse(result).success == "true") {
+							window.location.href = "/config_done.html";
+						}
+						else {
+							setStatus("Registration Failed", "red");
+						}
+					});
+				}
+
+				return false;
+			}
 		</script>
 	</head>
 	<body>
-		<form onsubmit="return tryConnect()">
+		<form onsubmit="return tryRegister()">
 			<fieldset id="fieldset">
-				<legend id="legend"></legend>
-				
-				<input type="checkbox" id="check_1">
-				<label for="check_1">Field 1</label>
-
+				<legend id="legend"> </legend>
+				<p><div id="division_select">
+				</div></p>
+				<p><div id="field_controls">
+				</div></p>
+				<p>
 				<input type="submit" value="Register">
+				</p>
 				<p id="status_text"> </p>
 			</fieldset>
 		</form>
