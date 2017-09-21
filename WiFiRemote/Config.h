@@ -36,6 +36,8 @@ namespace WiFiRemote {
     bool setFieldDivision(const String& division);
     bool setMultipleFieldOption(MultipleFieldOption option);
     void write();
+
+    String getMAC() const;
   
   private:
     const int INVALID_STRING = -1;

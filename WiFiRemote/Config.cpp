@@ -1,6 +1,7 @@
 #include "Config.h"
 
 #include <EEPROM.h>
+#include <ESP8266WiFi.h>
 
 namespace WiFiRemote {
   __Config Config;
@@ -239,3 +240,14 @@ void WiFiRemote::__Config::writeInt(int offset, int value, int size) {
   }
 }
 
+String WiFiRemote::__Config::getMAC() const {
+  auto addr = WiFi.macAddress();
+  String str;
+  
+  for(int i = 0; i < 5; ++i) {
+    str += String(addr[i], 16) + ":";
+  }
+  str += String(addr[5], 16);
+
+  return str;
+}

@@ -22,8 +22,6 @@ namespace WiFiRemote {
     static const int TIMEOUT = 100;
 
     WiFiClient client;
-
-    String getMAC();
     
   } Server;
 }

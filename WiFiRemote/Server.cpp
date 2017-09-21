@@ -1,5 +1,7 @@
 #include "Server.h"
 
+#include "Config.h"
+
 namespace WiFiRemote {
   __Server Server;
 }
@@ -23,18 +25,6 @@ bool WiFiRemote::__Server::isConnected() {
 }
 
 void WiFiRemote::__Server::sendEvent(__UserInterface::Button b) {
-  client.print(String("GET /button-pressed?") + getMAC() + "&btn=" + UserInterface.getButtonName(b) + " HTTP/1.1\r\nConnection: keep-alive\r\n\r\n");
-}
-
-String WiFiRemote::__Server::getMAC() {
-  auto addr = WiFi.macAddress();
-  String str;
-  
-  for(int i = 0; i < 5; ++i) {
-    str += String(addr[i], 16) + ":";
-  }
-  str += String(addr[5], 16);
-
-  return str;
+  client.print(String("GET /button-pressed?") + Config.getMAC() + "&btn=" + UserInterface.getButtonName(b) + " HTTP/1.1\r\nConnection: keep-alive\r\n\r\n");
 }
 

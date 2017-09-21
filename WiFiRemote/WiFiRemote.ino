@@ -26,6 +26,9 @@ FSM<StateCount, EdgeCount> fsm( StateBuilder<EdgeCount>{StateStart,
   []() {
     Serial.println("Enter StateInit");
 
+    //Disable writing AP settings to flash
+    WiFi.persistent(false);
+
     Config.begin();
     Serial.println(Config.toString());
     

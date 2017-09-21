@@ -100,8 +100,14 @@
 		</script>
 	</head>
 	<body>
+	<center>
 		<form onsubmit="return tryConnect()">
-			<fieldset>
+			<style type="text/css">
+				.fieldset-auto-width {
+					display: inline-block;
+				}
+			</style>
+			<fieldset style="width:0px">
 				<legend>Access Point</legend>
 				SSID:<br>
 				<select name="ssid" id="SSID_SEL">
@@ -118,5 +124,6 @@
 		<script type="text/javascript">
 			getSSIDs();
 		</script>
+	</center>
 	</body>
 </html>
