@@ -19,11 +19,11 @@ void WiFiRemote::ConfigPage::begin() {
   WiFi.softAP(String(String(AP_NAME) + " " + Config.getMAC()).c_str());
   
   webServer.on("/", [this]() {
-    webServer.send(200, "text/plain", htmlConfigIndex);
+    webServer.send(200, "text/html", htmlConfigIndex);
   });
   webServer.on("/config_server.html", [this]() {
     if(WiFi.status() == WL_CONNECTED) {
-      webServer.send(200, "text/plain", htmlConfigServer);
+      webServer.send(200, "text/html", htmlConfigServer);
     }
     else {
       //Redirect to start page
@@ -32,7 +32,7 @@ void WiFiRemote::ConfigPage::begin() {
     }
   });
   webServer.on("/config_done.html", [this]() {
-    webServer.send(200, "text/plain", htmlConfigDone);
+    webServer.send(200, "text/html", htmlConfigDone);
   });
 
   //REST endpoints
@@ -70,6 +70,7 @@ void WiFiRemote::ConfigPage::begin() {
   });
 
   webServer.begin();
+  MDNS.begin(HOST_NAME);
 }
 
 void WiFiRemote::ConfigPage::run() {

@@ -10,6 +10,10 @@
 
 #include "Server.h"
 
+#include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
+#include "ConfigPage.h"
+
 using namespace WiFiRemote;
 using namespace WiFiRemote::StateMachine;
 
@@ -21,6 +25,8 @@ const int StateStart = 0,
   StateConnectToServer = 3,
   StateWaitForButton = 4,
   StateSendButtonEvent = 5;
+
+ConfigPage configPage;
 
 FSM<StateCount, EdgeCount> fsm( StateBuilder<EdgeCount>{StateStart,
   []() {
@@ -63,9 +69,12 @@ void buildStateMachine() {
   fsm.addState( StateBuilder<EdgeCount>{StateConfigPage,
     []() {
       Serial.println("Enter StateConfigPage");
+
+      configPage.begin();
+      
       UserInterface.setLED(LEDState::On);
     },
-    []() { },
+    []() { configPage.run(); },
     []() { UserInterface.setLED(LEDState::Off); } }
   .addTransition(StateConnectToAP,
     []() { /*On submit valid Config*/ return false; })

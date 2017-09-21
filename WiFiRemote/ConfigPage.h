@@ -16,8 +16,8 @@ namespace WiFiRemote {
     void run();
   private:
     const char* AP_NAME = "WiFi Remote";
+    const char* HOST_NAME = "wifi-remote";
     ESP8266WebServer webServer;
-    MDNSResponder mdns;
   };
 }
 
